@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { Room } from 'livekit-client';
+import './App.css';
 
 export default function VoiceAgent() {
   const [connected, setConnected] = useState(false);
-
+  const [llmResponses, setLlmResponses] = useState([]);
   async function init() {
     try {
       const res = await fetch('http://localhost:8000/get_token?identity=test-user');
@@ -21,12 +22,18 @@ export default function VoiceAgent() {
       console.log('Connected to LiveKit room:', room.name);
       setConnected(true);
 
+      const ws = new WebSocket('ws://localhost:8000/ws/audio');
+      ws.binaryType = 'arraybuffer';
+
+      ws.onmessage = (event) => {
+        console.log("Received from backend:", event.data);
+        setLlmResponses((prev) => [...prev, event.data]);
+      };
+
+
       // Send audio to Deepgram over WebSocket
       const audioContext = new AudioContext();
       const source = audioContext.createMediaStreamSource(stream);
-
-      const ws = new WebSocket('ws://localhost:8000/ws/audio');
-      ws.binaryType = 'arraybuffer';
 
       const processor = audioContext.createScriptProcessor(2048, 1, 1);
       source.connect(processor);
@@ -80,14 +87,26 @@ export default function VoiceAgent() {
         return buffer;
       }
     } catch (err) {
-      console.error('Error during init:', err);
+      consome.error('Error during init:', err);
     }
   }
 
   return (
-    <div>
-      <h2>{connected ? "LiveKit Voice Agent Connected" : "Click to Start Voice Agent"}</h2>
-      {!connected && <button onClick={init}>Start Agent</button>}
+    <div className='voice-agent'>
+      <div>
+        <h2>{connected ? "LiveKit Voice Agent Connected" : "Click to Start Voice Agent"}</h2>
+        {!connected && <button onClick={init}>Start Agent</button>}
+
+        <div className="chat-box" style={{ marginTop: '20px', maxWidth: '600px', textAlign: 'left' }}>
+          <h3>Conversation:</h3>
+          {llmResponses.map((res, idx) => (
+            <p key={idx} style={{ background: "#f0f0f0", padding: "10px", borderRadius: "8px", color: 'black' }}>
+              {res}
+            </p>
+          ))}
+        </div>
+      </div>
     </div>
   );
+
 }

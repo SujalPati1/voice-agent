@@ -1,15 +1,17 @@
+/* Center root content */
 #root {
   max-width: 1280px;
   margin: 0 auto;
   padding: 2rem;
   text-align: center;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
+/* Logo styles */
 .logo {
   height: 6em;
   padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
+  transition: filter 300ms ease;
 }
 .logo:hover {
   filter: drop-shadow(0 0 2em #646cffaa);
@@ -18,6 +20,7 @@
   filter: drop-shadow(0 0 2em #61dafbaa);
 }
 
+/* Spinning animation */
 @keyframes logo-spin {
   from {
     transform: rotate(0deg);
@@ -33,10 +36,79 @@
   }
 }
 
+/* Card style (if reused elsewhere) */
 .card {
   padding: 2em;
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border-radius: 10px;
 }
 
+/* Generic text info */
 .read-the-docs {
   color: #888;
+}
+
+/* Voice agent wrapper */
+.voice-agent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  padding: 2rem;
+}
+
+/* Chat box */
+.chat-box {
+  background-color: #ffffff;
+  border: 1px solid #ccc;
+  border-radius: 12px;
+  padding: 1rem;
+  width: 100%;
+  max-width: 600px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+  overflow-y: auto;
+  max-height: 400px;
+}
+
+/* Individual chat bubble */
+.chat-box p {
+  background: #f0f0f0;
+  padding: 12px;
+  margin-bottom: 10px;
+  border-radius: 10px;
+  font-size: 16px;
+  text-align: left;
+  line-height: 1.5;
+}
+
+/* Start button */
+.voice-agent button {
+  padding: 10px 20px;
+  font-size: 16px;
+  background-color: #007bff;
+  border: none;
+  border-radius: 8px;
+  color: white;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.voice-agent button:hover {
+  background-color: #0056b3;
+}
+
+/* Responsive tweak */
+@media screen and (max-width: 768px) {
+  .voice-agent {
+    padding: 1rem;
+  }
+
+  .chat-box {
+    max-height: 300px;
+  }
+
+  .voice-agent button {
+    width: 100%;
+  }
 }
