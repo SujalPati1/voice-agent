@@ -1,5 +1,0 @@
-openpyxl
-websockets
-pyaudio
-aiohttp
-sounddevice
