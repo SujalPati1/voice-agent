@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Room, createLocalTracks } from 'livekit-client';
+import { Room } from 'livekit-client';
 
 export default function VoiceAgent() {
   const [connected, setConnected] = useState(false);
@@ -12,13 +12,16 @@ export default function VoiceAgent() {
       const room = new Room();
       await room.connect('wss://voice-agent-14zd5m08.livekit.cloud', token);
 
-      const tracks = await createLocalTracks({ audio: true });
-      tracks.forEach(track => room.localParticipant.publishTrack(track));
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+      // Publish mic stream to LiveKit
+      const audioTrack = stream.getAudioTracks()[0];
+      await room.localParticipant.publishTrack(audioTrack);
 
       console.log('Connected to LiveKit room:', room.name);
       setConnected(true);
 
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // Send audio to Deepgram over WebSocket
       const audioContext = new AudioContext();
       const source = audioContext.createMediaStreamSource(stream);
 
@@ -29,13 +32,43 @@ export default function VoiceAgent() {
       source.connect(processor);
       processor.connect(audioContext.destination);
 
+      // Send 1 second of silence to wake Deepgram
+      ws.onopen = () => {
+        const silence = new Int16Array(16000).buffer;
+        ws.send(silence);
+        console.log("WebSocket opened, sent initial silence");
+      };
+
       processor.onaudioprocess = (e) => {
         const input = e.inputBuffer.getChannelData(0);
-        const buffer = floatTo16BitPCM(input);
+        const downsampled = downsampleBuffer(input, audioContext.sampleRate, 16000);
+        const buffer = floatTo16BitPCM(downsampled);
         if (ws.readyState === WebSocket.OPEN) {
           ws.send(buffer);
+          console.log("Sent audio chunk:", buffer.byteLength);
         }
       };
+
+      function downsampleBuffer(buffer, sampleRate = 48000, outSampleRate = 16000) {
+        if (outSampleRate === sampleRate) return buffer;
+        const sampleRateRatio = sampleRate / outSampleRate;
+        const newLength = Math.round(buffer.length / sampleRateRatio);
+        const result = new Float32Array(newLength);
+        let offsetResult = 0;
+        let offsetBuffer = 0;
+        while (offsetResult < result.length) {
+          const nextOffsetBuffer = Math.round((offsetResult + 1) * sampleRateRatio);
+          let accum = 0, count = 0;
+          for (let i = offsetBuffer; i < nextOffsetBuffer && i < buffer.length; i++) {
+            accum += buffer[i];
+            count++;
+          }
+          result[offsetResult] = accum / count;
+          offsetResult++;
+          offsetBuffer = nextOffsetBuffer;
+        }
+        return result;
+      }
 
       function floatTo16BitPCM(input) {
         const buffer = new ArrayBuffer(input.length * 2);
