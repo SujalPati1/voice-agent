@@ -1,23 +1,27 @@
-import React, { useEffect } from 'react';
-import { connect } from 'livekit-client';
+import React, { useState } from 'react';
+import { Room, createLocalTracks } from 'livekit-client';
 
 export default function VoiceAgent() {
-  useEffect(() => {
-    async function init() {
-      // Step 1: Fetch token from your Python backend
+  const [connected, setConnected] = useState(false);
+
+  async function init() {
+    try {
       const res = await fetch('http://localhost:8000/get_token?identity=test-user');
       const { token } = await res.json();
 
-      // Step 2: Connect to LiveKit room
-      const room = await connect('wss://your-livekit-url', token);
-      console.log('Connected to LiveKit room:', room.name);
+      const room = new Room();
+      await room.connect('wss://voice-agent-14zd5m08.livekit.cloud', token);
 
-      // Step 3: Capture mic audio
+      const tracks = await createLocalTracks({ audio: true });
+      tracks.forEach(track => room.localParticipant.publishTrack(track));
+
+      console.log('Connected to LiveKit room:', room.name);
+      setConnected(true);
+
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const audioContext = new AudioContext();
       const source = audioContext.createMediaStreamSource(stream);
 
-      // Step 4: Setup WebSocket to your backend to send mic audio chunks
       const ws = new WebSocket('ws://localhost:8000/ws/audio');
       ws.binaryType = 'arraybuffer';
 
@@ -42,10 +46,15 @@ export default function VoiceAgent() {
         }
         return buffer;
       }
+    } catch (err) {
+      console.error('Error during init:', err);
     }
+  }
 
-    init();
-  }, []);
-
-  return <div>LiveKit Voice Agent Connected</div>;
+  return (
+    <div>
+      <h2>{connected ? "LiveKit Voice Agent Connected" : "Click to Start Voice Agent"}</h2>
+      {!connected && <button onClick={init}>Start Agent</button>}
+    </div>
+  );
 }
