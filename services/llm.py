@@ -13,7 +13,7 @@ client = openai.OpenAI(
     base_url=api_base,
 )
 
-def get_llm_response(prompt):
+async def get_llm_response(prompt):
     try:
         start_time = time.time()
 
@@ -31,11 +31,11 @@ def get_llm_response(prompt):
             if content_piece:
                 print(content_piece, end='', flush=True)
                 final_response += content_piece
+                yield content_piece
         total_time = time.time() - start_time
         print(f"\nResponse time: {total_time:.2f} seconds")
         
-        return final_response
 
     except Exception as e:
         print(f" Error fetching LLM response: {e}")
-        return None
+        return
